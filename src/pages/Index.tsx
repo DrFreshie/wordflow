@@ -16,7 +16,7 @@ const Index = () => {
                 <PenTool className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Essay Writer</h1>
+                <h1 className="text-2xl font-bold text-foreground">WordFlow</h1>
                 <p className="text-sm text-muted-foreground">Record and playback your writing process</p>
               </div>
             </div>
