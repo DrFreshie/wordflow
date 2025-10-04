@@ -124,7 +124,7 @@ export const PlaybackViewer = () => {
       </div>
 
       <div className="min-h-[400px] p-4 border rounded-lg bg-muted/30 overflow-y-auto">
-        <div className="whitespace-pre-wrap font-serif text-base leading-relaxed">
+        <div className="whitespace-pre-wrap font-serif text-base leading-relaxed text-left">
           {displayText || (recording.length === 0 ? 'No recording available' : 'Click play to start playback')}
         </div>
       </div>
