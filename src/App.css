@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+@font-face {
+  font-family: 'Vesterbro';
+  src: url('/src/assets/fonts/TRYVesterbro-Poster.otf') format('opentype');
+}
+
+h1 {
+  font-family: 'Vesterbro', serif;
+}
+
+body {
+  font-family: 'Overpass', sans-serif;
+}

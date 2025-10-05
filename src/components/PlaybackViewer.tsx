@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRecording, KeystrokeEvent } from '@/contexts/RecordingContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,15 @@ export const PlaybackViewer = () => {
     return text;
   };
 
+  const computeTextUpTo = useCallback((idx: number) => {
+    let text = '';
+    const limit = Math.min(Math.max(0, idx), recording.length);
+    for (let i = 0; i < limit; i++) {
+      text = applyKeystroke(text, recording[i]);
+    }
+    return text;
+  }, [recording]);
+
   useEffect(() => {
     if (isPlaying && currentIndex < recording.length) {
       const currentEvent = recording[currentIndex];
@@ -32,7 +41,7 @@ export const PlaybackViewer = () => {
         : 500;
 
       timeoutRef.current = setTimeout(() => {
-        setDisplayText(prev => applyKeystroke(prev, currentEvent));
+        // displayText is derived from currentIndex; see separate effect
         setCurrentIndex(prev => prev + 1);
       }, delay);
     } else if (currentIndex >= recording.length) {
@@ -45,6 +54,10 @@ export const PlaybackViewer = () => {
       }
     };
   }, [isPlaying, currentIndex, recording, speed]);
+
+  useEffect(() => {
+    setDisplayText(computeTextUpTo(currentIndex));
+  }, [currentIndex, computeTextUpTo]);
 
   const handlePlayPause = () => {
     if (currentIndex >= recording.length) {
@@ -66,7 +79,7 @@ export const PlaybackViewer = () => {
     setSpeed(value[0]);
   };
 
-  const progress = recording.length > 0 ? (currentIndex / recording.length) * 100 : 0;
+  const maxIndex = Math.max(0, recording.length);
 
   return (
     <Card className="p-6 shadow-lg">
@@ -106,20 +119,23 @@ export const PlaybackViewer = () => {
           </div>
         </div>
         
-        <div className="space-y-1">
-          <div className="flex justify-between text-sm text-muted-foreground">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm text-muted-foreground">
             <span>Progress</span>
-            <span>{Math.round(progress)}%</span>
+            <span>Event {currentIndex} of {recording.length}</span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Event {currentIndex} of {recording.length}
-          </div>
+          <Slider
+            value={[currentIndex]}
+            onValueChange={(val) => {
+              const idx = Math.min(Math.max(0, val[0]), maxIndex);
+              setIsPlaying(false);
+              setCurrentIndex(idx);
+            }}
+            min={0}
+            max={Math.max(1, maxIndex)}
+            step={1}
+            className="w-full"
+          />
         </div>
       </div>
 

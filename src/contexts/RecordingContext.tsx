@@ -26,10 +26,9 @@ export const RecordingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isRecording, setIsRecording] = useState(false);
   const [currentText, setCurrentText] = useState('');
 
+  // Start (or resume) recording. Do NOT clear text here so pause/resume keeps prior content.
   const startRecording = useCallback(() => {
     setIsRecording(true);
-    setRecording([]);
-    setCurrentText('');
   }, []);
 
   const stopRecording = useCallback(() => {
@@ -44,6 +43,7 @@ export const RecordingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCurrentText(text);
   }, []);
 
+  // Explicitly reset everything (used for "New" sessions)
   const clearRecording = useCallback(() => {
     setRecording([]);
     setCurrentText('');
