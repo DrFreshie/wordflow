@@ -125,19 +125,9 @@ export const WritingArea = () => {
                 <Pause className="h-4 w-4 mr-2" />
                 Pause
               </Button>
-              <Button onClick={handleStartStop} variant="destructive">
-                <Square className="h-4 w-4 mr-2" />
-                Stop
-              </Button>
             </>
           ) : (
             <>
-                            {localText.trim().length > 0 && (
-                <Button onClick={handleRestart} variant="destructive" className="ml-4">
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Restart
-                </Button>
-              )}
               {paused ? (
                 <Button onClick={handleResume} variant="default">
                   <Play className="h-4 w-4 mr-2" />
@@ -169,88 +159,94 @@ export const WritingArea = () => {
         Word count: {localText.trim().split(/\s+/).filter(Boolean).length} | Character count: {localText.length}
       </div>
       {!isRecording && (
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            onClick={async () => {
-              if (!localText.trim()) {
-                toast.error('No text to download');
-                return;
-              }
+        <div className="mt-4 flex justify-between items-center">
+          {localText.trim().length > 0 ? (
+            <Button onClick={handleRestart} variant="destructive">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restart
+            </Button>
+          ) : (
+            <div />
+          )}
 
-              const content = localText.trim();
-
-              // Build paragraphs: split on blank lines; keep single line breaks within a paragraph
-              const paragraphs = content.split(/\n{2,}/).map((para) => {
-                const lines = para.split(/\n/);
-                const runs: TextRun[] = [];
-                lines.forEach((line, idx) => {
-                  if (idx > 0) runs.push(new TextRun({ break: 1 }));
-                  runs.push(new TextRun({ text: line }));
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                if (!localText.trim()) {
+                  toast.error('No text to download');
+                  return;
+                }
+                const content = localText.trim();
+                const paragraphs = content.split(/\n{2,}/).map((para) => {
+                  const lines = para.split(/\n/);
+                  const runs: TextRun[] = [];
+                  lines.forEach((line, idx) => {
+                    if (idx > 0) runs.push(new TextRun({ break: 1 }));
+                    runs.push(new TextRun({ text: line }));
+                  });
+                  return new Paragraph({
+                    children: runs,
+                    spacing: { after: 240 },
+                  });
                 });
-                return new Paragraph({
-                  children: runs,
-                  spacing: { after: 240 }, // 12pt after
-                });
-              });
-
-              const doc = new Document({
-                styles: {
-                  paragraphStyles: [
+                const doc = new Document({
+                  styles: {
+                    paragraphStyles: [
+                      {
+                        id: 'Normal',
+                        name: 'Normal',
+                        basedOn: 'Normal',
+                        next: 'Normal',
+                        run: { font: 'Aptos (Body)', size: 24 },
+                      },
+                    ],
+                  },
+                  sections: [
                     {
-                      id: 'Normal',
-                      name: 'Normal',
-                      basedOn: 'Normal',
-                      next: 'Normal',
-                      run: { font: 'Aptos (Body)', size: 24 }, // 24 half-points = 12pt
+                      properties: {},
+                      children: paragraphs,
                     },
                   ],
-                },
-                sections: [
-                  {
-                    properties: {},
-                    children: paragraphs,
-                  },
-                ],
-              });
+                });
+                try {
+                  const blob = await Packer.toBlob(doc);
+                  saveAs(blob, `essay-${Date.now()}.docx`);
+                  toast.success('Word (.docx) file downloaded');
+                } catch (err) {
+                  console.error(err);
+                  toast.error('Failed to generate .docx');
+                }
+              }}
+              variant="outline"
+              disabled={!localText.trim()}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Download Essay
+            </Button>
 
-              try {
-                const blob = await Packer.toBlob(doc);
-                saveAs(blob, `essay-${Date.now()}.docx`);
-                toast.success('Word (.docx) file downloaded');
-              } catch (err) {
-                console.error(err);
-                toast.error('Failed to generate .docx');
-              }
-            }}
-            variant="outline"
-            disabled={!localText.trim()}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Download Essay
-          </Button>
-
-          <Button
-            onClick={() => {
-              if (!recording || recording.length === 0) {
-                toast.error('No recording to download');
-                return;
-              }
-              const dataStr = JSON.stringify(recording, null, 2);
-              const dataBlob = new Blob([dataStr], { type: 'application/json' });
-              const url = URL.createObjectURL(dataBlob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `essay-recording-${Date.now()}.json`;
-              link.click();
-              URL.revokeObjectURL(url);
-              toast.success('Recording downloaded');
-            }}
-            variant="outline"
-            disabled={!recording || recording.length === 0}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download Recording
-          </Button>
+            <Button
+              onClick={() => {
+                if (!recording || recording.length === 0) {
+                  toast.error('No recording to download');
+                  return;
+                }
+                const dataStr = JSON.stringify(recording, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `essay-recording-${Date.now()}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+                toast.success('Recording downloaded');
+              }}
+              variant="outline"
+              disabled={!recording || recording.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Recording
+            </Button>
+          </div>
         </div>
       )}
     </Card>
