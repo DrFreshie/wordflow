@@ -59,6 +59,13 @@ export const PlaybackViewer = () => {
     setDisplayText(computeTextUpTo(currentIndex));
   }, [currentIndex, computeTextUpTo]);
 
+  useEffect(() => {
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: 'smooth',
+  });
+}, [displayText]);
+
   const handlePlayPause = () => {
     if (currentIndex >= recording.length) {
       handleReset();
@@ -80,6 +87,44 @@ export const PlaybackViewer = () => {
   };
 
   const maxIndex = Math.max(0, recording.length);
+
+  // --- Scroll control (insert improved handler inside useEffect) ---
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    // Improved scroll handler
+    const handleScroll = (e: WheelEvent) => {
+      e.preventDefault();
+      setIsPlaying(false);
+
+      // Trackpad-friendly scaling
+      const delta = e.deltaY / 50; // scale sensitivity for macOS trackpads
+      setCurrentIndex(prev => {
+        const newIndex = Math.min(
+          Math.max(0, prev + Math.round(delta * recording.length * 0.01)), // move ~1% per scroll gesture
+          recording.length - 1
+        );
+
+        requestAnimationFrame(() => {
+          const container = containerRef.current;
+          if (container) {
+            const scrollRatio = newIndex / Math.max(1, recording.length - 1);
+            container.scrollTo({
+              top: scrollRatio * (container.scrollHeight - container.clientHeight),
+              behavior: 'smooth',
+            });
+          }
+        });
+
+        return newIndex;
+      });
+    };
+    const container = containerRef.current;
+    container.addEventListener('wheel', handleScroll, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleScroll);
+    };
+  }, [recording.length]);
 
   return (
     <Card className="p-6 shadow-lg">
@@ -111,19 +156,25 @@ export const PlaybackViewer = () => {
             <Slider
               value={[speed]}
               onValueChange={handleSpeedChange}
-              min={0.5}
-              max={5}
-              step={0.5}
+              min={1}
+              max={20}
+              step={1}
               className="w-24"
             />
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm text-muted-foreground">
-            <span>Progress</span>
-            <span>Event {currentIndex} of {recording.length}</span>
-          </div>
+      </div>
+
+      <div
+        className="min-h-[400px] p-4 border rounded-lg bg-muted/30 overflow-y-auto"
+        ref={containerRef}
+      >
+        <div className="whitespace-pre-wrap font-serif text-base leading-relaxed text-left">
+          {displayText || (recording.length === 0 ? 'No recording available' : 'Click play, adjust the slider below, or scroll to start playback')}
+        </div>
+      </div>
+
+      <div className="space-y-2 mt-6">
           <Slider
             value={[currentIndex]}
             onValueChange={(val) => {
@@ -136,14 +187,8 @@ export const PlaybackViewer = () => {
             step={1}
             className="w-full"
           />
+          
         </div>
-      </div>
-
-      <div className="min-h-[400px] p-4 border rounded-lg bg-muted/30 overflow-y-auto">
-        <div className="whitespace-pre-wrap font-serif text-base leading-relaxed text-left">
-          {displayText || (recording.length === 0 ? 'No recording available' : 'Click play to start playback')}
-        </div>
-      </div>
     </Card>
   );
 };
